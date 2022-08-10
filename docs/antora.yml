@@ -1,0 +1,5 @@
+name: quarkus-discord-bot
+title: Quarkus Discord Bot
+version: dev
+nav:
+  - modules/ROOT/nav.adoc

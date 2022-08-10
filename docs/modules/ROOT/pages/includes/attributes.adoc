@@ -1,0 +1,7 @@
+:quarkus-version: 2.11.2.Final
+:quarkus-discord-bot-version: 0
+
+:quarkus-guides: https://quarkus.io/guides
+:discord4j-javadoc-url: https://javadoc.io/doc/com.discord4j/discord4j-core/latest/discord4j/core
+
+:examples-dir: ./../examples/

@@ -1,0 +1,12 @@
+name: Discord Bot
+description: Enhance your Discord server with a Discord Bot
+metadata:
+keywords:
+  - "discord"
+  - "discord-bot"
+  - "discord bot"
+  - "bot"
+guide: https://quarkiverse.github.io/quarkiverse-docs/discord-bot/dev/
+categories:
+  - "miscellaneous"
+status: "preview"
