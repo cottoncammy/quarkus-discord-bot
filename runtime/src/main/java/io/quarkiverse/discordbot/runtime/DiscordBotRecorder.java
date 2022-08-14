@@ -15,7 +15,6 @@ import javax.enterprise.context.spi.CreationalContext;
 import org.reactivestreams.Publisher;
 
 import discord4j.common.ReactorResources;
-import discord4j.common.store.Store;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.EventDispatcher;
@@ -26,27 +25,31 @@ import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.object.presence.ClientActivity;
 import discord4j.core.object.presence.ClientPresence;
 import discord4j.core.object.presence.Status;
-import discord4j.core.retriever.EntityRetrievalStrategy;
 import discord4j.core.shard.DefaultShardingStrategy;
 import discord4j.core.shard.GatewayBootstrap;
 import discord4j.core.shard.ShardingStrategy;
 import discord4j.discordjson.json.gateway.Ready;
 import discord4j.discordjson.json.gateway.Resumed;
 import discord4j.gateway.GatewayOptions;
+import discord4j.gateway.GatewayReactorResources;
 import discord4j.gateway.intent.IntentSet;
 import discord4j.gateway.retry.GatewayStateChange;
+import discord4j.voice.VoiceReactorResources;
+import io.netty.channel.EventLoopGroup;
 import io.quarkiverse.discordbot.runtime.config.DiscordBotConfig;
 import io.quarkiverse.discordbot.runtime.config.PresenceConfig;
 import io.quarkiverse.discordbot.runtime.metrics.MicroProfileGatewayClientMetricsHandler;
 import io.quarkiverse.discordbot.runtime.metrics.MicrometerGatewayClientMetricsHandler;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.BeanDestroyer;
+import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.netty.http.client.HttpClient;
+import reactor.netty.udp.UdpClient;
 
 @Recorder
 public class DiscordBotRecorder {
@@ -57,20 +60,6 @@ public class DiscordBotRecorder {
     private static List<Function<ReadyEvent, Publisher<?>>> readyEventFunctions = new ArrayList<>();
     private static List<Consumer<ReadyEvent>> readyEventConsumers = new ArrayList<>();
 
-    private static ClientPresence getPresence(PresenceConfig presenceConfig) {
-        return ClientPresence.of(presenceConfig.status.orElse(Status.ONLINE), presenceConfig.activity
-                .map(activity -> ClientActivity.of(activity.type, activity.name, activity.url.orElse(null)))
-                .orElse(null));
-    }
-
-    private static void setEntityRetrievalStrategy(GatewayBootstrap<GatewayOptions> gatewayBootstrap,
-            EntityRetrievalStrategy strategy) {
-        gatewayBootstrap.setEntityRetrievalStrategy(strategy);
-        if (strategy == EntityRetrievalStrategy.REST) {
-            gatewayBootstrap.setStore(Store.noOp());
-        }
-    }
-
     private static Object getBeanInstance(String className) {
         try {
             Class<?> cl = Thread.currentThread().getContextClassLoader().loadClass(className);
@@ -80,14 +69,10 @@ public class DiscordBotRecorder {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static Function<ReadyEvent, Publisher<?>> getReadyEventFunction(String className) {
-        return (Function<ReadyEvent, Publisher<?>>) getBeanInstance(className);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Consumer<ReadyEvent> getReadyEventConsumer(String className) {
-        return (Consumer<ReadyEvent>) getBeanInstance(className);
+    private static ClientPresence getPresence(PresenceConfig presenceConfig) {
+        return ClientPresence.of(presenceConfig.status.orElse(Status.ONLINE), presenceConfig.activity
+                .map(activity -> ClientActivity.of(activity.type, activity.name, activity.url.orElse(null)))
+                .orElse(null));
     }
 
     public void setupMetrics(String type) {
@@ -98,21 +83,36 @@ public class DiscordBotRecorder {
         }
     }
 
+    public Supplier<EventLoopGroup> getEventLoopGroupBean() {
+        return new Supplier<EventLoopGroup>() {
+            @Override
+            public EventLoopGroup get() {
+                return Arc.container().instance(EventLoopGroup.class, MainEventLoopGroup.Literal.INSTANCE).get();
+            };
+        };
+    }
+
+    @SuppressWarnings("unchecked")
     public void setReadyEventFunctions(List<String> classNames) {
-        readyEventFunctions = classNames.stream().map(DiscordBotRecorder::getReadyEventFunction).collect(Collectors.toList());
+        readyEventFunctions = classNames.stream()
+                .map(className -> (Function<ReadyEvent, Publisher<?>>) getBeanInstance(className))
+                .collect(Collectors.toList());
     }
 
+    @SuppressWarnings("unchecked")
     public void setReadyEventConsumers(List<String> classNames) {
-        readyEventConsumers = classNames.stream().map(DiscordBotRecorder::getReadyEventConsumer).collect(Collectors.toList());
+        readyEventConsumers = classNames.stream()
+                .map(className -> (Consumer<ReadyEvent>) getBeanInstance(className))
+                .collect(Collectors.toList());
     }
 
-    // TODO configure schedulers, event loops
     // TODO jackson object mapper?
-    public Supplier<DiscordClient> createDiscordClient(DiscordBotConfig config, boolean ssl, ExecutorService executorService) {
+    public Supplier<DiscordClient> createDiscordClient(DiscordBotConfig config, boolean ssl, ExecutorService executorService,
+            Supplier<EventLoopGroup> eventLoopGroup) {
         return new Supplier<DiscordClient>() {
             @Override
             public DiscordClient get() {
-                HttpClient httpClient = HttpClient.create().compress(true).followRedirect(true);
+                HttpClient httpClient = HttpClient.create().runOn(eventLoopGroup.get()).compress(true).followRedirect(true);
                 return DiscordClient.builder(config.token)
                         .setReactorResources(ReactorResources.builder()
                                 .httpClient(ssl ? httpClient.secure() : httpClient)
@@ -129,9 +129,14 @@ public class DiscordBotRecorder {
             @Override
             public GatewayDiscordClient get() {
                 GatewayBootstrap<GatewayOptions> bootstrap = discordClientSupplier.get().gateway();
+                bootstrap.setGatewayReactorResources(GatewayReactorResources::new);
+                bootstrap.setVoiceReactorResources(reactorResources -> VoiceReactorResources.builder(reactorResources)
+                        .udpClient(UdpClient.create().runOn(reactorResources.getHttpClient().configuration().loopResources()))
+                        .build());
+
                 bootstrap.setInitialPresence(shard -> getPresence(config.presence));
                 config.enabledIntents.ifPresent(intents -> bootstrap.setEnabledIntents(IntentSet.of(intents)));
-                config.entityRetrievalStrategy.ifPresent(strategy -> setEntityRetrievalStrategy(bootstrap, strategy));
+                config.entityRetrievalStrategy.ifPresent(bootstrap::setEntityRetrievalStrategy);
 
                 DefaultShardingStrategy.Builder shardBuilder = ShardingStrategy.builder();
                 config.sharding.count.ifPresent(shardBuilder::count);
@@ -178,6 +183,7 @@ public class DiscordBotRecorder {
                     for (Consumer<ReadyEvent> readyEventConsumer : readyEventConsumers) {
                         sources.add(dispatcher.on(ReadyEvent.class).doOnNext(readyEventConsumer));
                     }
+
                     return Flux.concat(sources);
                 });
 
@@ -186,7 +192,7 @@ public class DiscordBotRecorder {
         };
     }
 
-    public static class GatewayClientDestroyer implements BeanDestroyer<GatewayDiscordClient> {
+    public static class GatewayDiscordClientDestroyer implements BeanDestroyer<GatewayDiscordClient> {
 
         @Override
         public void destroy(GatewayDiscordClient instance, CreationalContext<GatewayDiscordClient> context,

@@ -19,12 +19,12 @@ import org.reactivestreams.Publisher;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.discordjson.possible.PossibleModule;
+import io.netty.channel.EventLoopGroup;
 import io.quarkiverse.discordbot.deployment.spi.GatewayEventSubscriberReactorOperatorBuildItem;
 import io.quarkiverse.discordbot.runtime.DiscordBotRecorder;
 import io.quarkiverse.discordbot.runtime.config.DiscordBotConfig;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.*;
-import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -38,6 +38,7 @@ import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.gizmo.*;
 import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
+import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -174,10 +175,25 @@ public class DiscordBotProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void syntheticBeans(DiscordBotRecorder recorder, DiscordBotConfig config, SslNativeConfigBuildItem nativeSslConfig,
-            ExecutorBuildItem executor, BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+            ExecutorBuildItem executor, Optional<EventLoopSupplierBuildItem> eventLoopSupplierBuildItem,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+        Supplier<EventLoopGroup> eventLoopGroupSupplier;
+        if (eventLoopSupplierBuildItem.isPresent()) {
+            eventLoopGroupSupplier = eventLoopSupplierBuildItem.get().getMainSupplier();
+        } else {
+            eventLoopGroupSupplier = recorder.getEventLoopGroupBean();
+        }
+
         Supplier<DiscordClient> discordClient = recorder.createDiscordClient(config, nativeSslConfig.isEnabled(),
-                executor.getExecutorProxy());
-        syntheticBeans.produce(gatewayClientBean(recorder, config, discordClient, true));
+                executor.getExecutorProxy(), eventLoopGroupSupplier);
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(GatewayDiscordClient.class)
+                .scope(ApplicationScoped.class)
+                .addQualifier(Default.class)
+                .supplier(recorder.createGatewayClient(config, discordClient))
+                .destroyer(DiscordBotRecorder.GatewayDiscordClientDestroyer.class)
+                .setRuntimeInit()
+                .unremovable()
+                .done());
     }
 
     @BuildStep
@@ -253,20 +269,6 @@ public class DiscordBotProcessor {
                 .filter(cl -> !Modifier.isAbstract(cl.flags()))
                 .map(ClassInfo::name)
                 .collect(Collectors.toSet());
-    }
-
-    private static SyntheticBeanBuildItem gatewayClientBean(DiscordBotRecorder recorder, DiscordBotConfig config,
-            Supplier<DiscordClient> discordClient, boolean unremovable) {
-        ExtendedBeanConfigurator syntheticBeanConfigurator = SyntheticBeanBuildItem.configure(GatewayDiscordClient.class)
-                .scope(ApplicationScoped.class)
-                .addQualifier(Default.class)
-                .supplier(recorder.createGatewayClient(config, discordClient))
-                .destroyer(DiscordBotRecorder.GatewayClientDestroyer.class)
-                .setRuntimeInit();
-        if (unremovable) {
-            syntheticBeanConfigurator.unremovable();
-        }
-        return syntheticBeanConfigurator.done();
     }
 
     private static Map<GatewayEventObserverBuildItem, String> observerProxies(List<GatewayEventObserverBuildItem> observers,
