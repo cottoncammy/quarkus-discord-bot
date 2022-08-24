@@ -17,17 +17,6 @@
       <groupId>com.discord4j</groupId>
       <artifactId>discord4j-core</artifactId>
       <version>${discord4j.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>io.projectreactor</groupId>
-          <artifactId>reactor-core</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>io.projectreactor</groupId>
-      <artifactId>reactor-core</artifactId>
-      <version>${reactor.version}</version>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -44,12 +33,6 @@
     <dependency>
       <groupId>io.smallrye.reactive</groupId>
       <artifactId>mutiny-reactor</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>io.projectreactor</groupId>
-          <artifactId>reactor-core</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.graalvm.nativeimage</groupId>

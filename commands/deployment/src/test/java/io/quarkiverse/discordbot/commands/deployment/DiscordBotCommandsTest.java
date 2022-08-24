@@ -51,7 +51,7 @@ public class DiscordBotCommandsTest {
                 .getGuildApplicationCommands(id, guildId)
                 .filter(command -> command.name().equals("foo"))
                 .flatMap(command -> rest.getApplicationService()
-                        .deleteGuildApplicationCommand(id, guildId, Long.parseLong(command.id())))
+                        .deleteGuildApplicationCommand(id, guildId, command.id().asLong()))
                 .then())
                 .block();
 

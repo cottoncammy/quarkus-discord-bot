@@ -63,7 +63,7 @@ public class DiscordBotCommandsRegistrar {
             if (config.globalCommands.deleteMissing) {
                 publishers.add(idMono.flatMapMany(id -> app.getGlobalApplicationCommands(id)
                         .filter(filter(globalCommandRequests))
-                        .delayUntil(command -> app.deleteGlobalApplicationCommand(id, Long.parseLong(command.id()))))
+                        .delayUntil(command -> app.deleteGlobalApplicationCommand(id, command.id().asLong())))
                         .doOnNext(command -> LOGGER.debugf(
                                 "Deleted global command %s as it does not have a matching JSON file in %s",
                                 command.name(), globalCommandsPath)));
@@ -84,7 +84,7 @@ public class DiscordBotCommandsRegistrar {
                 publishers.add(idMono.flatMapMany(id -> app.getGuildApplicationCommands(id, commandsConfig.guildId)
                         .filter(filter(guildCommandRequests))
                         .delayUntil(command -> app.deleteGuildApplicationCommand(id, commandsConfig.guildId,
-                                Long.parseLong(command.id()))))
+                                command.id().asLong())))
                         .doOnNext(command -> LOGGER.debugf(
                                 "Deleted guild command %s from guild %s (%s) as it does not have a matching JSON file in %s",
                                 command.name(), entry.getKey(), commandsConfig.guildId, guildCommandsPath)));
