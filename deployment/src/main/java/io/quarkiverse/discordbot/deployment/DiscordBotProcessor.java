@@ -84,10 +84,8 @@ public class DiscordBotProcessor {
 
         // caffeine deps not covered by the caffeine extension
         reflection.produce(new ReflectiveClassBuildItem(true, true,
-                "com.github.benmanes.caffeine.cache.PSMS",
                 "com.github.benmanes.caffeine.cache.PW",
-                "com.github.benmanes.caffeine.cache.SI",
-                "com.github.benmanes.caffeine.cache.SSLMS"));
+                "com.github.benmanes.caffeine.cache.SI"));
     }
 
     @BuildStep
