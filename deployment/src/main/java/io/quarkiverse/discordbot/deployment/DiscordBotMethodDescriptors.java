@@ -1,7 +1,6 @@
 package io.quarkiverse.discordbot.deployment;
 
 import java.lang.annotation.Annotation;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
@@ -20,10 +19,6 @@ import reactor.core.publisher.Mono;
 public class DiscordBotMethodDescriptors {
     public static final MethodDescriptor ARC_CONTAINER_INSTANCE = MethodDescriptor.ofMethod(ArcContainer.class, "instance",
             InstanceHandle.class, Class.class, Annotation[].class);
-    public static final MethodDescriptor CONSUMER_ACCEPT = MethodDescriptor.ofMethod(Consumer.class, "accept", void.class,
-            Object.class);
-    public static final MethodDescriptor FLUX_DO_ON_NEXT = MethodDescriptor.ofMethod(Flux.class, "doOnNext", Flux.class,
-            Consumer.class);
     public static final MethodDescriptor FLUX_FLAT_MAP = MethodDescriptor.ofMethod(Flux.class, "flatMap", Flux.class,
             Function.class);
     public static final MethodDescriptor FLUX_THEN = MethodDescriptor.ofMethod(Flux.class, "then", Mono.class);

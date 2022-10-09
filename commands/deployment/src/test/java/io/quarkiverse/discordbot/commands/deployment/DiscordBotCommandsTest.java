@@ -24,6 +24,7 @@ import io.quarkiverse.discordbot.commands.Command;
 import io.quarkiverse.discordbot.commands.SubCommand;
 import io.quarkiverse.discordbot.commands.SubCommandGroup;
 import io.quarkus.test.QuarkusUnitTest;
+import reactor.core.publisher.Mono;
 
 public class DiscordBotCommandsTest {
 
@@ -80,8 +81,8 @@ public class DiscordBotCommandsTest {
             private static final Logger LOGGER = Logger.getLogger(BarCommand.class);
 
             @SubCommand("baz")
-            void onChatInputInteraction(ChatInputInteractionEvent chatInputInteraction) {
-                LOGGER.info("Received ChatInputInteractionEvent");
+            Mono<Void> onChatInputInteraction(ChatInputInteractionEvent chatInputInteraction) {
+                return Mono.fromRunnable(() -> LOGGER.info("Received ChatInputInteractionEvent"));
             }
         }
     }

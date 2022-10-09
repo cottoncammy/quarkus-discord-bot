@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import io.quarkiverse.discordbot.GatewayEvent;
 import io.quarkus.test.QuarkusDevModeTest;
+import reactor.core.publisher.Mono;
 
 public class DiscordBotDevModeTest {
 
@@ -33,8 +34,8 @@ public class DiscordBotDevModeTest {
     static class MyBean {
         private static final Logger LOGGER = Logger.getLogger(MyBean.class);
 
-        void onMessageCreate(@GatewayEvent MessageCreateEvent event) {
-            LOGGER.info("Received MessageCreate");
+        Mono<Void> onMessageCreate(@GatewayEvent MessageCreateEvent event) {
+            return Mono.fromRunnable(() -> LOGGER.info("Received MessageCreate"));
         }
     }
 }

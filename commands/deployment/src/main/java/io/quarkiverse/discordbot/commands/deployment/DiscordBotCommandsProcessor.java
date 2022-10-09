@@ -6,7 +6,6 @@ import static io.quarkiverse.discordbot.deployment.DiscordBotMethodDescriptors.*
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.jboss.jandex.*;
@@ -20,7 +19,7 @@ import io.quarkiverse.discordbot.commands.runtime.DiscordBotCommandsRecorder;
 import io.quarkiverse.discordbot.commands.runtime.DiscordBotCommandsRegistrar;
 import io.quarkiverse.discordbot.commands.runtime.config.DiscordBotCommandsConfig;
 import io.quarkiverse.discordbot.deployment.DiscordBotUtils;
-import io.quarkiverse.discordbot.deployment.spi.GatewayEventSubscriberReactorOperatorBuildItem;
+import io.quarkiverse.discordbot.deployment.spi.GatewayEventSubscriberFlatMapOperatorBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -34,6 +33,11 @@ import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.*;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.groups.MultiCreate;
+import io.smallrye.mutiny.groups.UniCreate;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class DiscordBotCommandsProcessor {
@@ -44,7 +48,6 @@ public class DiscordBotCommandsProcessor {
     private static final MethodDescriptor DISCORD_BOT_COMMANDS_FILTER_TEST = MethodDescriptor.ofMethod(
             DiscordBotCommandsFilter.class, "test", boolean.class, InteractionCreateEvent.class, String.class,
             Optional.class, Optional.class, Optional.class);
-    private static final MethodDescriptor MONO_EMPTY = MethodDescriptor.ofMethod(Mono.class, "empty", Mono.class);
 
     private static final List<DotName> COMMAND_EVENTS = List.of(
             DotName.createSimple(ChatInputAutoCompleteEvent.class.getName()),
@@ -86,15 +89,14 @@ public class DiscordBotCommandsProcessor {
     @BuildStep
     void subscriberOperators(CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
-            BuildProducer<GatewayEventSubscriberReactorOperatorBuildItem> subscriberOperators) {
+            BuildProducer<GatewayEventSubscriberFlatMapOperatorBuildItem> subscriberOperators) {
         List<CommandDefinition> commands = commands(combinedIndex.getIndex());
         ClassOutput output = new GeneratedClassGizmoAdaptor(generatedClass, true);
         Map<CommandDefinition, String> commandProxies = commandProxies(commands, output);
 
         for (CommandDefinition command : commands) {
-            subscriberOperators.produce(new GatewayEventSubscriberReactorOperatorBuildItem(
+            subscriberOperators.produce(new GatewayEventSubscriberFlatMapOperatorBuildItem(
                     command.method.parameterTypes().get(0).name().toString(),
-                    command.returnsVoid() ? FLUX_DO_ON_NEXT : FLUX_FLAT_MAP,
                     mc -> mc.newInstance(MethodDescriptor.ofConstructor(commandProxies.get(command)))));
         }
     }
@@ -153,7 +155,7 @@ public class DiscordBotCommandsProcessor {
     private static void verifyMethodSignature(MethodInfo method, DotName annotation) {
         if (!DiscordBotUtils.isValidReturnType(method.returnType())) {
             throw new IllegalStateException(String.format(
-                    "Method annotated with %s at %s:%s must return void, %s, %s, %s, or %s",
+                    "Method annotated with %s at %s:%s must return %s, %s, %s, or %s",
                     annotation, method.declaringClass().name(), method.name(), MONO, UNI, FLUX, MULTI));
         }
 
@@ -184,18 +186,30 @@ public class DiscordBotCommandsProcessor {
             ClassCreator cc = ClassCreator.builder()
                     .classOutput(output)
                     .className(className)
-                    .interfaces(command.returnsVoid() ? Consumer.class : Function.class)
+                    .interfaces(Function.class)
                     .build();
 
-            MethodCreator mc = cc.getMethodCreator(command.returnsVoid() ? CONSUMER_ACCEPT : FUNCTION_APPLY);
+            MethodCreator mc = cc.getMethodCreator(FUNCTION_APPLY);
             mc.setModifiers(Modifier.PUBLIC);
 
             ResultHandle filter = DiscordBotUtils.getBeanInstance(mc, DiscordBotCommandsFilter.class.getName());
-            BranchResult branch = mc.ifTrue(mc.invokeVirtualMethod(DISCORD_BOT_COMMANDS_FILTER_TEST,
+            BranchResult branch = mc.ifFalse(mc.invokeVirtualMethod(DISCORD_BOT_COMMANDS_FILTER_TEST,
                     filter, mc.getMethodParam(0), mc.load(command.name), optional(mc, command.guildName),
                     optional(mc, command.subCommandGroupName), optional(mc, command.subCommandName)));
-            branch.falseBranch()
-                    .returnValue(command.returnsVoid() ? mc.loadNull() : mc.invokeStaticMethod(MONO_EMPTY));
+            BytecodeCreator bc = branch.trueBranch();
+
+            DotName name = method.returnType().name();
+            if (name.equals(UNI)) {
+                bc.returnValue(bc.invokeVirtualMethod(MethodDescriptor.ofMethod(UniCreate.class, "voidItem", Uni.class),
+                        bc.invokeStaticMethod(MethodDescriptor.ofMethod(Uni.class, "createFrom", UniCreate.class))));
+            } else if (name.equals(MONO)) {
+                bc.returnValue(bc.invokeStaticMethod(MethodDescriptor.ofMethod(Mono.class, "empty", Mono.class)));
+            } else if (name.equals(MULTI)) {
+                bc.returnValue(bc.invokeVirtualMethod(MethodDescriptor.ofMethod(MultiCreate.class, "empty", Multi.class),
+                        bc.invokeStaticMethod(MethodDescriptor.ofMethod(Multi.class, "createFrom", MultiCreate.class))));
+            } else {
+                bc.returnValue(bc.invokeStaticMethod(MethodDescriptor.ofMethod(Flux.class, "empty", Flux.class)));
+            }
 
             ResultHandle publisher = mc.invokeVirtualMethod(method,
                     DiscordBotUtils.getBeanInstance(mc, method.declaringClass().name().toString()),

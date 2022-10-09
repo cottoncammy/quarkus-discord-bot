@@ -47,8 +47,4 @@ public final class GatewayEventObserverBuildItem extends MultiBuildItem {
     public boolean observesReadyEvent() {
         return eventClassName.equals(ReadyEvent.class.getName());
     }
-
-    public boolean returnsVoid() {
-        return returnType.equals(void.class.getName());
-    }
 }

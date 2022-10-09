@@ -60,28 +60,20 @@ public class DiscordBotGatewayEventListenerTest {
     static class MyBean {
         private static final Logger LOGGER = Logger.getLogger(MyBean.class);
 
-        void voidMessage(@GatewayEvent MessageCreateEvent messageCreate) {
-            LOGGER.info("Received MessageCreateEvent");
-        }
-
         Mono<Void> monoMessage(@GatewayEvent MessageCreateEvent messageCreate) {
-            LOGGER.info("Received MessageCreateEvent");
-            return Mono.empty();
+            return Mono.fromRunnable(() -> LOGGER.info("Received MessageCreateEvent"));
         }
 
         Uni<Void> uniMessage(@GatewayEvent MessageCreateEvent messageCreate) {
-            LOGGER.info("Received MessageCreateEvent");
-            return Uni.createFrom().voidItem();
+            return Uni.createFrom().voidItem().invoke(() -> LOGGER.info("Received MessageCreateEvent"));
         }
 
         Flux<Void> fluxMessage(@GatewayEvent MessageCreateEvent messageCreate) {
-            LOGGER.info("Received MessageCreateEvent");
-            return Flux.empty();
+            return Mono.fromRunnable(() -> LOGGER.info("Received MessageCreateEvent")).thenMany(Flux.empty());
         }
 
         Multi<Void> multiMessage(@GatewayEvent MessageCreateEvent messageCreate) {
-            LOGGER.info("Received MessageCreateEvent");
-            return Multi.createFrom().empty();
+            return Uni.createFrom().voidItem().invoke(() -> LOGGER.info("Received MessageCreateEvent")).toMulti();
         }
     }
 }

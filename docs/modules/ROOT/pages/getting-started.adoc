@@ -77,8 +77,8 @@ For example, create the following class:
 [source,java]
 ----
 class AddReaction {
-    void onMessageCreate(@GatewayEvent MessageCreateEvent event) {
-        event.getMessage().addReaction(ReactionEmoji.of("🤖")).block();
+    Mono<Void> onMessageCreate(@GatewayEvent MessageCreateEvent event) {
+        return event.getMessage().addReaction(ReactionEmoji.of("🤖")).block();
     }
 }
 ----

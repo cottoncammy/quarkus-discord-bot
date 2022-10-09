@@ -13,6 +13,7 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import io.quarkiverse.discordbot.GatewayEvent;
 import io.quarkus.test.QuarkusUnitTest;
+import reactor.core.publisher.Mono;
 
 public class DiscordBotReadyEventListenerTest {
 
@@ -40,8 +41,8 @@ public class DiscordBotReadyEventListenerTest {
     static class MyBean {
         private static final Logger LOGGER = Logger.getLogger(MyBean.class);
 
-        void onReady(@GatewayEvent ReadyEvent ready) {
-            LOGGER.info("Received ReadyEvent");
+        Mono<Void> onReady(@GatewayEvent ReadyEvent ready) {
+            return Mono.fromRunnable(() -> LOGGER.info("Received ReadyEvent"));
         }
     }
 }

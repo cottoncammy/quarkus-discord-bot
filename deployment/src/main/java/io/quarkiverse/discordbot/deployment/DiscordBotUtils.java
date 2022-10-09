@@ -31,7 +31,7 @@ public class DiscordBotUtils {
     }
 
     public static boolean isValidReturnType(Type type) {
-        return type.kind() == Type.Kind.VOID || RETURN_TYPES.contains(type.name());
+        return RETURN_TYPES.contains(type.name());
     }
 
     private DiscordBotUtils() {

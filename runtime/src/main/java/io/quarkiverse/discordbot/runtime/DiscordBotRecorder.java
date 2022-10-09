@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -58,7 +57,6 @@ public class DiscordBotRecorder {
 
     private static Function<EventDispatcher, Publisher<?>> metricsHandler;
     private static List<Function<ReadyEvent, Publisher<?>>> readyEventFunctions = new ArrayList<>();
-    private static List<Consumer<ReadyEvent>> readyEventConsumers = new ArrayList<>();
 
     private static Object getBeanInstance(String className) {
         try {
@@ -96,13 +94,6 @@ public class DiscordBotRecorder {
     public void setReadyEventFunctions(List<String> classNames) {
         readyEventFunctions = classNames.stream()
                 .map(className -> (Function<ReadyEvent, Publisher<?>>) getBeanInstance(className))
-                .collect(Collectors.toList());
-    }
-
-    @SuppressWarnings("unchecked")
-    public void setReadyEventConsumers(List<String> classNames) {
-        readyEventConsumers = classNames.stream()
-                .map(className -> (Consumer<ReadyEvent>) getBeanInstance(className))
                 .collect(Collectors.toList());
     }
 
@@ -178,10 +169,6 @@ public class DiscordBotRecorder {
 
                     for (Function<ReadyEvent, Publisher<?>> readyEventFunction : readyEventFunctions) {
                         sources.add(dispatcher.on(ReadyEvent.class).flatMap(readyEventFunction));
-                    }
-
-                    for (Consumer<ReadyEvent> readyEventConsumer : readyEventConsumers) {
-                        sources.add(dispatcher.on(ReadyEvent.class).doOnNext(readyEventConsumer));
                     }
 
                     return Flux.concat(sources);

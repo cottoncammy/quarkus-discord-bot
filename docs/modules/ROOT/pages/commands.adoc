@@ -63,22 +63,22 @@ To listen for the command you just defined, create the following class:
 class FooCommand {
 
     @Command(value="foo", guild="test") // <1>
-    void onFoo(ChatInputInteractionEvent event) { // <2>
+    Mono<Void> onFoo(ChatInputInteractionEvent event) { // <2>
         String name = event.getOption("name")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString)
                 .get(); // <3>
 
-        event.reply(name).block(); // <4>
+        return event.reply(name).block(); // <4>
     }
 }
 ----
 <1> The `guild` value indicates that we're listening to a guild command from the guild ID we configured under the name `test`. Simply omit the `guild` value if you want to listen for global commands.
-<2> Like Gateway listener methods, command methods can be imperative, returning `void`, or reactive, returning `void` or reactive, returning `Mono`, `Uni`, `Flux`, or `Multi`.
+<2> Like Gateway listener methods, command methods can return `Mono`, `Uni`, `Flux`, or `Multi`.
 <3> Here, we extract the value of the `name` option passed to our `foo` command.
 <4> When we receive a command, we have to acknowledge it. Here, we acknowledge the command by immediately replying.
 
-NOTE: We plan to allow option values to be injected directly into command methods in the future.
+NOTE: It is planned to allow option values to be injected directly into command methods in the future.
 
 === Subcommands and subcommand groups
 
@@ -89,7 +89,7 @@ You can listen for subcommands and subcommand groups using a slightly different 
 class FooCommands {
 
     @SubCommand("baz") // <1>
-    void onBaz(ChatInputInteractionEvent event) {
+    Mono<Void> onBaz(ChatInputInteractionEvent event) {
         // acknowledge command
     }
 
@@ -97,7 +97,7 @@ class FooCommands {
     class BarCommands {
 
         @SubCommand("baz") // <2>
-        void onBaz(ChatInputInteractionEvent event) {
+        Mono<Void> onBaz(ChatInputInteractionEvent event) {
             // acknowledge command
         }
     }

@@ -7,13 +7,11 @@ Quarkus Discord Bot is an experimental [Quarkus](https://quarkus.io) extension w
 Your bot code will look like this:
 ```java
 class MyDiscordBot {
-    void onMessageCreate(@GatewayEvent MessageCreateEvent event) {
-        event.getMessage().addReaction(ReactionEmoji.of("🤖")).block();
+    Mono<Void> onMessageCreate(@GatewayEvent MessageCreateEvent event) {
+        return event.getMessage().addReaction(ReactionEmoji.of("🤖"));
     }
 }
 ```
-
-(Or, use a reactive style by returning the chain instead of blocking. See the [docs](#documentation) for more.)
 
 The code above listens to the `MESSAGE_CREATE` Gateway event and adds a reaction of 🤖 to every received message.
 

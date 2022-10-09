@@ -16,20 +16,9 @@ The https://projectreactor.io/docs/core/release/reference/#which-operator[Choosi
 
 === Listening to events
 
-To listen to Gateway events, simply declare a method with an event type parameter and annotate it with `@GatewayEvent`. The method can either be imperative, returning `void` or reactive, returning `Mono`, `Uni`, `Flux`, or `Multi`.
+To listen to Gateway events, simply declare a method with an event type parameter and annotate it with `@GatewayEvent`. The method can return `Mono`, `Uni`, `Flux`, or `Multi`.
 
 Here's an example of an imperative listener method:
-
-[source,java]
-----
-class AddReaction {
-    void onMessageCreate(@GatewayEvent MessageCreateEvent event) {
-        event.getMessage().addReaction(ReactionEmoji.of("🤖")).block();
-    }
-}
-----
-
-And here's the same method written reactively:
 
 [source,java]
 ----
@@ -79,7 +68,7 @@ For example:
 [source,java]
 ----
 class DeletePersistentMessage {
-    void onMessageDelete(@GatewayEvent MessageDeleteEvent event, EntityManager em) {
+    Mono<Void> onMessageDelete(@GatewayEvent MessageDeleteEvent event, EntityManager em) {
         // do something with em
     }
 }

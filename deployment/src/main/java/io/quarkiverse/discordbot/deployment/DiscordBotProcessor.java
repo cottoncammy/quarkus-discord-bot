@@ -5,7 +5,6 @@ import static io.quarkiverse.discordbot.deployment.DiscordBotMethodDescriptors.*
 
 import java.lang.reflect.Modifier;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -20,7 +19,7 @@ import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.discordjson.possible.PossibleModule;
 import io.netty.channel.EventLoopGroup;
-import io.quarkiverse.discordbot.deployment.spi.GatewayEventSubscriberReactorOperatorBuildItem;
+import io.quarkiverse.discordbot.deployment.spi.GatewayEventSubscriberFlatMapOperatorBuildItem;
 import io.quarkiverse.discordbot.runtime.DiscordBotRecorder;
 import io.quarkiverse.discordbot.runtime.config.DiscordBotConfig;
 import io.quarkus.arc.Unremovable;
@@ -158,7 +157,7 @@ public class DiscordBotProcessor {
             // return type must be void, Uni, Mono, Flux, or Multi
             if (!DiscordBotUtils.isValidReturnType(returnType)) {
                 throw new IllegalStateException(String.format(
-                        "Gateway event observer method at %s:%s must return void, %s, %s, %s, or %s",
+                        "Gateway event observer method at %s:%s must return %s, %s, %s, or %s",
                         className, method.name(), MONO, UNI, FLUX, MULTI));
             }
 
@@ -198,27 +197,26 @@ public class DiscordBotProcessor {
     void subscriberOperators(List<GatewayEventObserverBuildItem> observers,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<ReadyEventObserverBuildItem> readyEvents,
-            BuildProducer<GatewayEventSubscriberReactorOperatorBuildItem> subscriberOperators) {
+            BuildProducer<GatewayEventSubscriberFlatMapOperatorBuildItem> subscriberOperators) {
         ClassOutput output = new GeneratedBeanGizmoAdaptor(generatedBeans);
         Map<GatewayEventObserverBuildItem, String> proxyClasses = observerProxies(observers, output);
 
         observers.removeIf(observer -> {
             if (observer.observesReadyEvent()) {
-                readyEvents.produce(new ReadyEventObserverBuildItem(proxyClasses.get(observer), !observer.returnsVoid()));
+                readyEvents.produce(new ReadyEventObserverBuildItem(proxyClasses.get(observer)));
             }
             return observer.observesReadyEvent();
         });
 
         for (GatewayEventObserverBuildItem observer : observers) {
-            subscriberOperators.produce(new GatewayEventSubscriberReactorOperatorBuildItem(
+            subscriberOperators.produce(new GatewayEventSubscriberFlatMapOperatorBuildItem(
                     observer.getEventClassName(),
-                    observer.returnsVoid() ? FLUX_DO_ON_NEXT : FLUX_FLAT_MAP,
                     mc -> DiscordBotUtils.getBeanInstance(mc, proxyClasses.get(observer))));
         }
     }
 
     @BuildStep
-    void eventSubscriber(List<GatewayEventSubscriberReactorOperatorBuildItem> subscriberOperators,
+    void eventSubscriber(List<GatewayEventSubscriberFlatMapOperatorBuildItem> subscriberOperators,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans) {
         if (subscriberOperators.isEmpty()) {
             return;
@@ -233,11 +231,11 @@ public class DiscordBotProcessor {
 
         ResultHandle publishers = mc.newArray(Publisher.class, subscriberOperators.size());
         for (int i = 0; i < subscriberOperators.size(); i++) {
-            GatewayEventSubscriberReactorOperatorBuildItem operator = subscriberOperators.get(i);
+            GatewayEventSubscriberFlatMapOperatorBuildItem operator = subscriberOperators.get(i);
 
             ResultHandle flux = mc.invokeVirtualMethod(GATEWAY_DISCORD_CLIENT_ON, mc.getMethodParam(1),
                     mc.loadClass(operator.getEventClassName()));
-            flux = mc.invokeVirtualMethod(operator.getOperator(), flux, operator.getOperatorArgCreator().apply(mc));
+            flux = mc.invokeVirtualMethod(FLUX_FLAT_MAP, flux, operator.getFlatMapArgCreator().apply(mc));
             mc.writeArrayValue(publishers, i, mc.invokeVirtualMethod(FLUX_THEN, flux));
         }
 
@@ -250,14 +248,8 @@ public class DiscordBotProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void readyEvents(DiscordBotRecorder recorder, BeanContainerBuildItem arc,
-            List<ReadyEventObserverBuildItem> readyEventObservers) {
-        Map<Boolean, List<ReadyEventObserverBuildItem>> observers = readyEventObservers.stream()
-                .collect(Collectors.partitioningBy(ReadyEventObserverBuildItem::isFunction));
-
-        recorder.setReadyEventFunctions(observers.get(true).stream()
-                .map(ReadyEventObserverBuildItem::getClassName)
-                .collect(Collectors.toList()));
-        recorder.setReadyEventConsumers(observers.get(false).stream()
+            List<ReadyEventObserverBuildItem> observers) {
+        recorder.setReadyEventFunctions(observers.stream()
                 .map(ReadyEventObserverBuildItem::getClassName)
                 .collect(Collectors.toList()));
     }
@@ -287,13 +279,13 @@ public class DiscordBotProcessor {
             ClassCreator cc = ClassCreator.builder()
                     .classOutput(output)
                     .className(className)
-                    .interfaces(observer.returnsVoid() ? Consumer.class : Function.class)
+                    .interfaces(Function.class)
                     .build();
 
             cc.addAnnotation(ApplicationScoped.class);
             cc.addAnnotation(Unremovable.class);
 
-            MethodCreator mc = cc.getMethodCreator(observer.returnsVoid() ? CONSUMER_ACCEPT : FUNCTION_APPLY);
+            MethodCreator mc = cc.getMethodCreator(FUNCTION_APPLY);
             mc.setModifiers(Modifier.PUBLIC);
 
             FieldCreator instance = cc.getFieldCreator("observer", observerClass);

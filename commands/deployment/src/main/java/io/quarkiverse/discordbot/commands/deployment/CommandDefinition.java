@@ -1,7 +1,6 @@
 package io.quarkiverse.discordbot.commands.deployment;
 
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type;
 
 public class CommandDefinition {
     final String name;
@@ -21,10 +20,6 @@ public class CommandDefinition {
 
     public static Builder builder() {
         return new Builder();
-    }
-
-    public boolean returnsVoid() {
-        return method.returnType().kind() == Type.Kind.VOID;
     }
 
     static class Builder {
