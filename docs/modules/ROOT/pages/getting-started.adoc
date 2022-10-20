@@ -2,7 +2,7 @@
 
 include::./includes/attributes.adoc[]
 
-Before you create your Quarkus Discord Bot, you'll need to create a Discord developer application and spin up a new bot user. If you already have a Discord bot set up, skip to xref:installation[Installation] to start experimenting.
+Before you create your Quarkus Discord bot, you'll need to create a Discord developer application and spin up a new bot user. If you already have a Discord bot set up, skip to xref:installation[Installation] to start experimenting.
 
 == Create a Discord bot user
 
@@ -32,22 +32,22 @@ IMPORTANT: You should add your bot to a server that only you're in until you're 
 
 == [[installation]]Installation
 
-To create a Quarkus Discord Bot, you need Quarkus. You can create a Quarkus application using Maven:
+To create a Quarkus Discord bot, you need Quarkus. You can create a Quarkus application with the Quarkus Discord4J extension using Maven:
 [source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=my-discord-bot \
-    -Dextensions="io.quarkiverse.discord-bot:quarkus-discord-bot:{quarkus-discord-bot-version}"
+    -Dextensions="io.quarkiverse.discord4j:quarkus-discord-bot:{quarkus-discord4j-version}"
 ----
 
-Alternatively, just add the Quarkus Discord Bot dependency to your existing Quarkus application:
+Alternatively, just add the Quarkus Discord4J dependency to your existing Quarkus application:
 [source,xml,subs=attributes+]
 ----
 <dependency>
-    <groupId>io.quarkiverse.discord-bot</groupId>
-    <artifactId>quarkus-discord-bot</artifactId>
-    <version>{quarkus-discord-bot-version}</version>
+    <groupId>io.quarkiverse.discord4j</groupId>
+    <artifactId>quarkus-discord4j</artifactId>
+    <version>{quarkus-discord4j-version}</version>
 </dependency>
 ----
 
@@ -61,8 +61,8 @@ Because we have a token that we don't want to commit, let's use a `.env`
 file:
 [source,properties]
 ----
-QUARKUS_DISCORD_BOT_TOKEN=<your bot token>
-QUARKUS_DISCORD_BOT_ENABLED_INTENTS=<set of enabled Gateway intents>
+QUARKUS_DISCORD4J_TOKEN=<your bot token>
+QUARKUS_DISCORD4J_ENABLED_INTENTS=<set of enabled Gateway intents>
 ----
 
 QUARKUS_DISCORD_BOT_TOKEN:: Your bot's token obtained from your app's `Bot` section in the Discord developer portal
@@ -78,7 +78,7 @@ For example, create the following class:
 ----
 class AddReaction {
     Mono<Void> onMessageCreate(@GatewayEvent MessageCreateEvent event) {
-        return event.getMessage().addReaction(ReactionEmoji.of("🤖")).block();
+        return event.getMessage().addReaction(ReactionEmoji.of("🤖"));
     }
 }
 ----

@@ -4,7 +4,7 @@ include::./includes/attributes.adoc[]
 
 == Preamble
 
-You should be somewhat familiar with the https://quarkus.io[Quarkus framework] before creating your Quarkus Discord Bot. Quarkus has extensive documentation at {quarkus-guides} to help you get started.
+You should be somewhat familiar with the https://quarkus.io[Quarkus framework] before creating your Quarkus Discord bot. Quarkus has extensive documentation at {quarkus-guides} to help you get started.
 
 Additionally, the https://docs.discord4j.com[Discord4J documentation] and the https://discord.com/developers/docs/topics/gateway#commands-and-events-gateway-events[Discord API Gateway event documentation] are essential resources to have on hand.
 
@@ -76,7 +76,7 @@ class DeletePersistentMessage {
 
 == Metrics
 
-If your Quarkus app uses a metrics extension like link:{quarkus-guides}/micrometer[Micrometer] or link:{quarkus-guides}/smallrye-metrics[SmallRye Metrics], you can enable metrics collection for your bot exposed at the `/q/metrics` endpoint by setting the configuration property `quarkus.discord-bot.metrics.enabled` to true.
+If your Quarkus app uses a metrics extension like link:{quarkus-guides}/micrometer[Micrometer] or link:{quarkus-guides}/smallrye-metrics[SmallRye Metrics], you can enable metrics collection for your bot exposed at the `/q/metrics` endpoint by setting the configuration property `quarkus.discord4j.metrics.enabled` to true.
 
 Currently, metrics are collected for the number of servers your bot is in and the number of voice channels your bot is in.
 
@@ -84,14 +84,14 @@ Currently, metrics are collected for the number of servers your bot is in and th
 
 A readiness health check for your bot is automatically exposed at the `/q/health/ready` endpoint if your Quarkus app depends on link:{quarkus-guides}/smallrye-health[SmallRye Health]. All of your bot's shards will be checked and the health status will be `DOWN` if any shard isn't connected.
 
-You can disable the health check by setting `quarkus.discord-bot.health.enabled` to false.
+You can disable the health check by setting `quarkus.discord4j.health.enabled` to false.
 
 == Native executable
 
-You can package your Discord Bot into a native executable with GraalVM or Mandrel to reduce its memory footprint and speed up its boot time. See the https://quarkus.io/guides/building-native-image[Building a native executable guide] for more information.
+You can package your Discord bot into a native executable with GraalVM or Mandrel to reduce its memory footprint and speed up its boot time. See the https://quarkus.io/guides/building-native-image[Building a native executable guide] for more information.
 
 == Configuration
 
 You can configure the following properties:
 
-include::includes/quarkus-discord-bot.adoc[]
+include::includes/quarkus-discord4j.adoc[]

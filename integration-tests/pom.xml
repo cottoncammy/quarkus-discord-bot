@@ -3,14 +3,14 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>io.quarkiverse.discord-bot</groupId>
-    <artifactId>quarkus-discord-bot-parent</artifactId>
+    <groupId>io.quarkiverse.discord4j</groupId>
+    <artifactId>quarkus-discord4j-parent</artifactId>
     <version>999-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>quarkus-discord-bot-integration-tests</artifactId>
-  <name>Quarkus - Discord Bot - Integration Tests</name>
+  <artifactId>quarkus-discord4j-integration-tests</artifactId>
+  <name>Quarkus - Discord4J - Integration Tests</name>
 
   <properties>
     <skipITs>true</skipITs>
@@ -18,8 +18,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.quarkiverse.discord-bot</groupId>
-      <artifactId>quarkus-discord-bot</artifactId>
+      <groupId>io.quarkiverse.discord4j</groupId>
+      <artifactId>quarkus-discord4j</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

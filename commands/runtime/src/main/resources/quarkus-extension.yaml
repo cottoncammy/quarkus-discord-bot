@@ -1,13 +1,13 @@
-name: Discord Bot
-description: Enhance your Discord Bot with commands
+name: Discord4J
+description: Enhance your Discord bot with commands
 metadata:
 keywords:
   - "discord"
-  - "discord-bot"
+  - "discord4j"
   - "discord bot"
   - "bot"
   - "command"
-guide: https://quarkiverse.github.io/quarkiverse-docs/discord-bot/dev/
+guide: https://quarkiverse.github.io/quarkiverse-docs/discord4j/dev/
 categories:
   - "miscellaneous"
 status: "preview"

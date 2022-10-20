@@ -4,25 +4,25 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>io.quarkiverse.discord-bot</groupId>
-        <artifactId>quarkus-discord-bot-parent</artifactId>
+        <groupId>io.quarkiverse.discord4j</groupId>
+        <artifactId>quarkus-discord4j-parent</artifactId>
         <version>999-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkus-discord-bot-docs</artifactId>
-    <name>Quarkus - Discord Bot - Documentation</name>
+    <artifactId>quarkus-discord4j-docs</artifactId>
+    <name>Quarkus - Discord4J - Documentation</name>
 
     <dependencies>
         <!-- Make sure the doc is built after the other artifacts -->
         <dependency>
-            <groupId>io.quarkiverse.discord-bot</groupId>
-            <artifactId>quarkus-discord-bot-deployment</artifactId>
+            <groupId>io.quarkiverse.discord4j</groupId>
+            <artifactId>quarkus-discord4j-deployment</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.quarkiverse.discord-bot</groupId>
-            <artifactId>quarkus-discord-bot-commands-deployment</artifactId>
+            <groupId>io.quarkiverse.discord4j</groupId>
+            <artifactId>quarkus-discord4j-commands-deployment</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
@@ -72,7 +72,7 @@
                             <resources>
                                 <resource>
                                     <directory>${project.basedir}/../target/asciidoc/generated/config/</directory>
-                                    <include>quarkus-discord-bot.adoc</include>
+                                    <include>quarkus-discord4j.adoc</include>
                                     <filtering>false</filtering>
                                 </resource>
                                 <resource>

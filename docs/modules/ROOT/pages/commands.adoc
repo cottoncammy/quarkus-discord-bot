@@ -4,17 +4,17 @@ include::./includes/attributes.adoc[]
 
 https://discord.com/developers/docs/interactions/application-commands[Application commands] are Discord's newest way of interacting with bots in Discord, replacing the traditional method of parsing out message content.
 
-It's possible to interface with application commands using Gateway listener methods, but the `quarkus-discord-bot-commands` extension comes with some additional goodies that make it easy to develop application commands.
+It's possible to interface with application commands using Gateway listener methods, but the `quarkus-discord4j-commands` extension comes with some additional goodies that make it easy to develop application commands.
 
 == Installation
 
-Add the `quarkus-discord-bot-commands` artifact to your Quarkus app:
+Add the `quarkus-discord4j-commands` artifact to your Quarkus app:
 [source,xml,subs=attributes+]
 ----
 <dependency>
-    <groupId>io.quarkiverse.discord-bot</groupId>
-    <artifactId>quarkus-discord-bot-commands</artifactId>
-    <version>{quarkus-discord-bot-version}</version>
+    <groupId>io.quarkiverse.discord4j</groupId>
+    <artifactId>quarkus-discord4j-commands</artifactId>
+    <version>{quarkus-discord4j-version}</version>
 </dependency>
 ----
 
@@ -45,8 +45,8 @@ You can find the full JSON schema of application commands https://discord.com/de
 Now that you've created a guild command using JSON, you need to configure the ID of the guild command, and configure your Quarkus Discord Bot to register the command when your app starts. You can do that by configuring the following properties:
 [source,properties]
 ----
-quarkus.discord-bot.guild-commands.test.overwrite-on-start=true
-quarkus.discord-bot.guild-commands.test.guild-id=<test guild ID>
+quarkus.discord4j.guild-commands.test.overwrite-on-start=true
+quarkus.discord4j.guild-commands.test.guild-id=<test guild ID>
 ----
 
 The configuration name of the guild commands, `test`, must match the name of the subdirectory in `META-INF/commands` we created earlier.
@@ -69,7 +69,7 @@ class FooCommand {
                 .map(ApplicationCommandInteractionOptionValue::asString)
                 .get(); // <3>
 
-        return event.reply(name).block(); // <4>
+        return event.reply(name); // <4>
     }
 }
 ----
