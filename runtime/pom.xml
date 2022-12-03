@@ -39,8 +39,8 @@
       <artifactId>mutiny-reactor</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.graalvm.nativeimage</groupId>
-      <artifactId>svm</artifactId>
+      <groupId>org.graalvm.sdk</groupId>
+      <artifactId>graal-sdk</artifactId>
     </dependency>
     <dependency>
       <groupId>io.micrometer</groupId>
